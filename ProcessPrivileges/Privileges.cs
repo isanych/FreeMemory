@@ -7,113 +7,110 @@ namespace ProcessPrivileges
     using System.Runtime.InteropServices;
     using System.Text;
 
-    internal static class Privileges 
+    internal static class Privileges
     {
-        internal static readonly SortedList<Privilege, Luid>
-			luidList = new SortedList<Privilege, Luid>((int)Privilege._MaxInvalid);
-
-		internal static readonly SortedList<string, Privilege> 
-			privilegeConstants;
+        internal static readonly SortedList<Privilege, Luid> luidList = new SortedList<Privilege, Luid>((int)Privilege._MaxInvalid);
+        internal static readonly SortedList<string, Privilege> privilegeConstants;
 
         static Privileges()
         {
-            SortedList<string, Privilege>
-				Lst = new SortedList<string, Privilege>((int)Privilege._MaxInvalid, StringComparer.InvariantCulture);
-
-			Lst.Add("SeAssignPrimaryTokenPrivilege", Privilege.AssignPrimaryToken);
-			Lst.Add("SeAuditPrivilege", Privilege.Audit);
-			Lst.Add("SeBackupPrivilege", Privilege.Backup);
-			Lst.Add("SeChangeNotifyPrivilege", Privilege.ChangeNotify);
-			Lst.Add("SeCreateGlobalPrivilege", Privilege.CreateGlobal);
-			Lst.Add("SeCreatePagefilePrivilege", Privilege.CreatePageFile);
-			Lst.Add("SeCreatePermanentPrivilege", Privilege.CreatePermanent);
-			Lst.Add("SeCreateSymbolicLinkPrivilege", Privilege.CreateSymbolicLink);
-			Lst.Add("SeCreateTokenPrivilege", Privilege.CreateToken);
-			Lst.Add("SeDebugPrivilege", Privilege.Debug);
-			Lst.Add("SeEnableDelegationPrivilege", Privilege.EnableDelegation);
-			Lst.Add("SeImpersonatePrivilege", Privilege.Impersonate);
-			Lst.Add("SeIncreaseBasePriorityPrivilege", Privilege.IncreaseBasePriority);
-			Lst.Add("SeIncreaseQuotaPrivilege", Privilege.IncreaseQuota);
-			Lst.Add("SeIncreaseWorkingSetPrivilege", Privilege.IncreaseWorkingSet);
-			Lst.Add("SeLoadDriverPrivilege", Privilege.LoadDriver);
-			Lst.Add("SeLockMemoryPrivilege", Privilege.LockMemory);
-			Lst.Add("SeMachineAccountPrivilege", Privilege.MachineAccount);
-			Lst.Add("SeManageVolumePrivilege", Privilege.ManageVolume);
-			Lst.Add("SeProfileSingleProcessPrivilege", Privilege.ProfileSingleProcess);
-			Lst.Add("SeRelabelPrivilege", Privilege.Relabel);
-			Lst.Add("SeRemoteShutdownPrivilege", Privilege.RemoteShutdown);
-			Lst.Add("SeRestorePrivilege", Privilege.Restore);
-			Lst.Add("SeSecurityPrivilege", Privilege.Security);
-			Lst.Add("SeShutdownPrivilege", Privilege.Shutdown);
-			Lst.Add("SeSyncAgentPrivilege", Privilege.SyncAgent);
-			Lst.Add("SeSystemEnvironmentPrivilege", Privilege.SystemEnvironment);
-			Lst.Add("SeSystemProfilePrivilege", Privilege.SystemProfile);
-			Lst.Add("SeSystemtimePrivilege", Privilege.SystemTime);
-			Lst.Add("SeTakeOwnershipPrivilege", Privilege.TakeOwnership);
-			Lst.Add("SeTimeZonePrivilege", Privilege.TimeZone);
-			Lst.Add("SeTcbPrivilege", Privilege.TrustedComputerBase);
-			Lst.Add("SeTrustedCredManAccessPrivilege", Privilege.TrustedCredentialManagerAccess);
-			Lst.Add("SeUndockPrivilege", Privilege.Undock);
-			Lst.Add("SeUnsolicitedInputPrivilege", Privilege.UnsolicitedInput);
-			privilegeConstants = Lst;
+            privilegeConstants = new SortedList<string, Privilege>((int)Privilege._MaxInvalid, StringComparer.InvariantCulture) {
+                { "SeAssignPrimaryTokenPrivilege", Privilege.AssignPrimaryToken },
+                { "SeAuditPrivilege", Privilege.Audit },
+                { "SeBackupPrivilege", Privilege.Backup },
+                { "SeChangeNotifyPrivilege", Privilege.ChangeNotify },
+                { "SeCreateGlobalPrivilege", Privilege.CreateGlobal },
+                { "SeCreatePagefilePrivilege", Privilege.CreatePageFile },
+                { "SeCreatePermanentPrivilege", Privilege.CreatePermanent },
+                { "SeCreateSymbolicLinkPrivilege", Privilege.CreateSymbolicLink },
+                { "SeCreateTokenPrivilege", Privilege.CreateToken },
+                { "SeDebugPrivilege", Privilege.Debug },
+                { "SeEnableDelegationPrivilege", Privilege.EnableDelegation },
+                { "SeImpersonatePrivilege", Privilege.Impersonate },
+                { "SeIncreaseBasePriorityPrivilege", Privilege.IncreaseBasePriority },
+                { "SeIncreaseQuotaPrivilege", Privilege.IncreaseQuota },
+                { "SeIncreaseWorkingSetPrivilege", Privilege.IncreaseWorkingSet },
+                { "SeLoadDriverPrivilege", Privilege.LoadDriver },
+                { "SeLockMemoryPrivilege", Privilege.LockMemory },
+                { "SeMachineAccountPrivilege", Privilege.MachineAccount },
+                { "SeManageVolumePrivilege", Privilege.ManageVolume },
+                { "SeProfileSingleProcessPrivilege", Privilege.ProfileSingleProcess },
+                { "SeRelabelPrivilege", Privilege.Relabel },
+                { "SeRemoteShutdownPrivilege", Privilege.RemoteShutdown },
+                { "SeRestorePrivilege", Privilege.Restore },
+                { "SeSecurityPrivilege", Privilege.Security },
+                { "SeShutdownPrivilege", Privilege.Shutdown },
+                { "SeSyncAgentPrivilege", Privilege.SyncAgent },
+                { "SeSystemEnvironmentPrivilege", Privilege.SystemEnvironment },
+                { "SeSystemProfilePrivilege", Privilege.SystemProfile },
+                { "SeSystemtimePrivilege", Privilege.SystemTime },
+                { "SeTakeOwnershipPrivilege", Privilege.TakeOwnership },
+                { "SeTimeZonePrivilege", Privilege.TimeZone },
+                { "SeTcbPrivilege", Privilege.TrustedComputerBase },
+                { "SeTrustedCredManAccessPrivilege", Privilege.TrustedCredentialManagerAccess },
+                { "SeUndockPrivilege", Privilege.Undock },
+                { "SeUnsolicitedInputPrivilege", Privilege.UnsolicitedInput }
+            };
         }
 
-		private static TokenPrivilegeArray AdjustPrivilege(AccessTokenHandle accessTokenHandle, PrivilegeAttributes privilegeAttributes, params Luid[] luid)
+        private static void AdjustPrivilege(AccessTokenHandle accessTokenHandle, PrivilegeAttributes privilegeAttributes, params Luid[] luid)
         {
-			TokenPrivilegeArray
-				nArray = new TokenPrivilegeArray((uint)luid.Length);
+            var nArray = new TokenPrivilegeArray((uint)luid.Length);
 
-			for(int i=0; i<luid.Length; i++)
-			{
-				LuidAndAttributes
-					v = new LuidAndAttributes();
-				v.Attributes = privilegeAttributes;
-				v.Luid = luid[i];
-				nArray[(uint)i] = v;
-			}
+            for (var i = 0; i < luid.Length; i++)
+            {
+                var v = new LuidAndAttributes
+                {
+                    Attributes = privilegeAttributes,
+                    Luid = luid[i]
+                };
+                nArray[(uint)i] = v;
+            }
 
-			return NativeMethods.AdjustTokenPrivileges(accessTokenHandle, false, nArray);
+            NativeMethods.AdjustTokenPrivileges(accessTokenHandle, false, nArray);
         }
 
-		private static TokenPrivilegeArray AdjustPrivilege(AccessTokenHandle accessTokenHandle, PrivilegeAttributes privilegeAttributes, params Privilege[] privilege)
+        private static void AdjustPrivilege(AccessTokenHandle accessTokenHandle, PrivilegeAttributes privilegeAttributes, params Privilege[] privilege)
         {
-			return AdjustPrivilege(accessTokenHandle, privilegeAttributes, GetLuid(privilege));
+            AdjustPrivilege(accessTokenHandle, privilegeAttributes, GetLuid(privilege));
         }
 
-		internal static TokenPrivilegeArray DisablePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
+        internal static void DisablePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
         {
-			return AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Disabled, privilege);
+            AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Disabled, privilege);
         }
 
-		internal static TokenPrivilegeArray EnablePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
+        internal static void EnablePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
         {
-			return AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Enabled, privilege);
+            AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Enabled, privilege);
         }
 
-		private static Luid[] GetLuid(params Privilege[] privilege)
-		{
-			Luid[]
-				result = new Luid[privilege.Length];
+        private static Luid[] GetLuid(params Privilege[] privilege)
+        {
+            var result = new Luid[privilege.Length];
 
-			for(int i=0; i<privilege.Length; i++)
-			{
-				if (luidList.ContainsKey(privilege[i]))
-					result[i] = luidList[privilege[i]];
-				else 
-				{
-					Luid 
-						luid = new Luid();
-					int
-						pos = privilegeConstants.IndexOfValue(privilege[i]);
+            for (var i = 0; i < privilege.Length; i++)
+            {
+                if (luidList.ContainsKey(privilege[i]))
+                {
+                    result[i] = luidList[privilege[i]];
+                }
+                else
+                {
+                    var luid = new Luid();
+                    var pos = privilegeConstants.IndexOfValue(privilege[i]);
 
-					if (!NativeMethods.LookupPrivilegeValue(string.Empty, privilegeConstants.Keys[pos], ref luid))
-						throw new Win32Exception();
-					luidList.Add(privilege[i], luid);
-					result[i] = luid;
-				}
-			}
-			return result;
-		}
+                    if (!NativeMethods.LookupPrivilegeValue(string.Empty, privilegeConstants.Keys[pos], ref luid))
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    luidList.Add(privilege[i], luid);
+                    result[i] = luid;
+                }
+            }
+            return result;
+        }
 
         private static Luid GetLuid(Privilege privilege)
         {
@@ -121,20 +118,26 @@ namespace ProcessPrivileges
             {
                 return luidList[privilege];
             }
-            Luid luid = new Luid();
+            var luid = new Luid();
 
             if (!NativeMethods.LookupPrivilegeValue(string.Empty, privilegeConstants.Keys[privilegeConstants.IndexOfValue(privilege)], ref luid))
+            {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
 
-			luidList.Add(privilege, luid);
+            luidList.Add(privilege, luid);
             return luid;
         }
 
-        internal static PrivilegeAttributes GetPrivilegeAttributes(Privilege privilege, List<PrivilegeAndAttributes>Lst)
+        internal static PrivilegeAttributes GetPrivilegeAttributes(Privilege privilege, List<PrivilegeAndAttributes> Lst)
         {
-            foreach (PrivilegeAndAttributes c in Lst)
+            foreach (var c in Lst)
+            {
                 if (c.Privilege == privilege)
+                {
                     return c.Attributes;
+                }
+            }
 
             GetLuid(privilege);
             return PrivilegeAttributes.Removed;
@@ -142,95 +145,90 @@ namespace ProcessPrivileges
 
         private static string GetPrivilegeName(Luid luid)
         {
-            StringBuilder 
-				name = new StringBuilder(256);
-            int 
-				nameLength = name.Capacity;
+            var name = new StringBuilder(256);
+            var nameLength = name.Capacity;
 
-			if (!NativeMethods.LookupPrivilegeName(string.Empty, ref luid, name, ref nameLength))
-			{
-				int
-					error = Marshal.GetLastWin32Error();
-				if(error==0x7a && nameLength > 0 && nameLength > name.Capacity)
-				{
-					name.Capacity = nameLength;
-					if (!NativeMethods.LookupPrivilegeName(string.Empty, ref luid, name, ref nameLength))
-						throw new Win32Exception();
-				} else
-					throw new Win32Exception(error);
-			}
+            if (!NativeMethods.LookupPrivilegeName(string.Empty, ref luid, name, ref nameLength))
+            {
+                var error = Marshal.GetLastWin32Error();
+                if (error == 0x7a && nameLength > 0 && nameLength > name.Capacity)
+                {
+                    name.Capacity = nameLength;
+                    if (!NativeMethods.LookupPrivilegeName(string.Empty, ref luid, name, ref nameLength))
+                    {
+                        throw new Win32Exception();
+                    }
+                }
+                else
+                {
+                    throw new Win32Exception(error);
+                }
+            }
             return name.ToString();
         }
 
         internal static List<PrivilegeAndAttributes> GetPrivileges(AccessTokenHandle accessTokenHandle)
         {
-            LuidAndAttributes[] 
-				tokenPrivileges = GetTokenPrivileges(accessTokenHandle);
+            var tokenPrivileges = GetTokenPrivileges(accessTokenHandle);
+            var length = tokenPrivileges.Length;
+            var list = new List<PrivilegeAndAttributes>(length);
 
-            int 
-				length = tokenPrivileges.Length;
-
-            List<PrivilegeAndAttributes> 
-				list = new List<PrivilegeAndAttributes>(length);
-
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                LuidAndAttributes 
-					attributes = tokenPrivileges[i];
-                string 
-					privilegeName = GetPrivilegeName(attributes.Luid);
+                var attributes = tokenPrivileges[i];
+                var privilegeName = GetPrivilegeName(attributes.Luid);
 
-				if (privilegeConstants.ContainsKey(privilegeName))
-					list.Add(new PrivilegeAndAttributes(privilegeConstants[privilegeName], attributes.Attributes));
+                if (privilegeConstants.ContainsKey(privilegeName))
+                {
+                    list.Add(new PrivilegeAndAttributes(privilegeConstants[privilegeName], attributes.Attributes));
+                }
             }
-			return list;
+            return list;
         }
 
-        private unsafe static LuidAndAttributes[] GetTokenPrivileges(AccessTokenHandle accessTokenHandle)
+        private static unsafe LuidAndAttributes[] GetTokenPrivileges(AccessTokenHandle accessTokenHandle)
         {
-			int
-				size = (int)((uint)Privilege._MaxInvalid * StaticInfo.LuidAndAttributes_Size),
-				orig = size;
+            var size = (int)((uint)Privilege._MaxInvalid * StaticInfo.LuidAndAttributes_Size);
+            var orig = size;
+            var ptr = Marshal.AllocHGlobal(size);
+            LuidAndAttributes[] result = null;
 
-			IntPtr
-				ptr = Marshal.AllocHGlobal(size);
-
-			LuidAndAttributes[] 
-				result = null;
-
-			try
-			{
-				if (!NativeMethods.GetTokenInformation(accessTokenHandle, TokenInformationClass.TokenPrivileges, ref ptr, size, out size))
-				{
-					int 
-						error = Marshal.GetLastWin32Error();
-					if (error == 0x7a && size > orig)
-					{
-						Marshal.FreeHGlobal(ptr);
-						ptr = Marshal.AllocHGlobal((int)size);
-						if (!NativeMethods.GetTokenInformation(accessTokenHandle, TokenInformationClass.TokenPrivileges, ref ptr, size, out size))
-							throw new Win32Exception();
-					} else
-						throw new Win32Exception(error);
-				}
-				size = size / (int)StaticInfo.LuidAndAttributes_Size;
-				result = new LuidAndAttributes[size];
-				fixed (void* p = result)
-				{
-					NativeMethods.CopyMemory(new IntPtr(p), ptr, (uint)size);
-				}
-			}
-			finally
-			{
-				Marshal.FreeHGlobal(ptr);
-			}
-			return result;
+            try
+            {
+                if (!NativeMethods.GetTokenInformation(accessTokenHandle, TokenInformationClass.TokenPrivileges, ref ptr, size, out size))
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    if (error == 0x7a && size > orig)
+                    {
+                        Marshal.FreeHGlobal(ptr);
+                        ptr = Marshal.AllocHGlobal(size);
+                        if (!NativeMethods.GetTokenInformation(accessTokenHandle, TokenInformationClass.TokenPrivileges, ref ptr, size, out size))
+                        {
+                            throw new Win32Exception();
+                        }
+                    }
+                    else
+                    {
+                        throw new Win32Exception(error);
+                    }
+                }
+                size = size / (int)StaticInfo.LuidAndAttributes_Size;
+                result = new LuidAndAttributes[size];
+                fixed (void* p = result)
+                {
+                    NativeMethods.CopyMemory(new IntPtr(p), ptr, (uint)size);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+            return result;
         }
 
-		internal static TokenPrivilegeArray RemovePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
+        internal static void RemovePrivilege(AccessTokenHandle accessTokenHandle, params Privilege[] privilege)
         {
-            return AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Removed, privilege);
+            AdjustPrivilege(accessTokenHandle, PrivilegeAttributes.Removed, privilege);
         }
     }
 }
-

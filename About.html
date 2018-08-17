@@ -3,69 +3,64 @@
 <head>
     <meta charset="utf-8" />
     <title>Free Standby Memory from Windows</title>
-	<style>
-		p	{ text-align:justify; text-indent:2em; }
-		a	{ white-space:nowrap; }
-		pre	{ margin-left:3em; margin-right:3em;}
-	</style>
+    <style>
+        p    { text-align:justify; text-indent:2em; }
+        a    { white-space:nowrap; }
+        pre    { margin-left:3em; margin-right:3em;}
+    </style>
 </head>
 <body>
-	<h1>Introduction</h1>
-	<p>
-		The makers of <a href="//processhacker.sourceforge.net">process hacker</a> know the windows kernel inside and out!&nbsp; 
-		Fortunately for them, they are also fluent in c++: the language that the windows kernel was designed on.&nbsp;
-		For the rest of us, we struggle to make C# perform similar functions.&nbsp; One of those functions is the ability to release memory 
-		from the <a href="//blogs.technet.com/b/askperf/archive/2012/12/19/where-has-all-my-physical-ram-gone.aspx">windows standby memory</a>.&nbsp;
-		That is what we will do here.
-	</p>
-	<h1>Credits</h1>
-	<p>
-		Obviously, the procedures used here are fundamentally taken from Process Hacker's source code - <em>Thanks!</em>
-	</p>
-	<p>
-		Next, the hardest part is getting the Kernel privileges.&nbsp; While I've significanly tweaked the code, my thanks must also go to <a href="//processprivileges.codeplex.com/">Nick Lowe</a> - <em>Thanks!</em>
-	</p>
-	<blockquote>
-		<p><em>
-			Note: I have trimmed almost all code that is not related to the task itself.&nbsp; If you want to know more about either project, please visit their websites.
-			</em>
-		</p>
-	</blockquote>
-	<h1>Step One: Setting Kernel Privileges</h1>
-	<p>
-		Microsoft has designed the API to take a structure that contains an array of structures.&nbsp; There are no good Marshaling procedures for this - they either assume the array is length=1 or
-		require that the size of the array be predetermined at compilation.&nbsp; For this purpose I designed a class that holds the exact structure that Microsoft requires in unmanaged memory via
-		an System.IntPtr.&nbsp; I had to resort to one unsafe procedure at this point ... but I'm sure that can be bypassed with more work in the future.
-	</p>
-	<pre lang="cs">
+    <h1>Introduction</h1>
+    <p>
+        The makers of <a href="//processhacker.sourceforge.net">process hacker</a> know the windows kernel inside and out!&nbsp; 
+        Fortunately for them, they are also fluent in c++: the language that the windows kernel was designed on.&nbsp;
+        For the rest of us, we struggle to make C# perform similar functions.&nbsp; One of those functions is the ability to release memory 
+        from the <a href="//blogs.technet.com/b/askperf/archive/2012/12/19/where-has-all-my-physical-ram-gone.aspx">windows standby memory</a>.&nbsp;
+        That is what we will do here.
+    </p>
+    <h1>Credits</h1>
+    <p>
+        Obviously, the procedures used here are fundamentally taken from Process Hacker's source code - <em>Thanks!</em>
+    </p>
+    <p>
+        Next, the hardest part is getting the Kernel privileges.&nbsp; While I've significanly tweaked the code, my thanks must also go to <a href="//processprivileges.codeplex.com/">Nick Lowe</a> - <em>Thanks!</em>
+    </p>
+    <blockquote>
+        <p><em>
+            Note: I have trimmed almost all code that is not related to the task itself.&nbsp; If you want to know more about either project, please visit their websites.
+            </em>
+        </p>
+    </blockquote>
+    <h1>Step One: Setting Kernel Privileges</h1>
+    <p>
+        Microsoft has designed the API to take a structure that contains an array of structures.&nbsp; There are no good Marshaling procedures for this - they either assume the array is length=1 or
+        require that the size of the array be predetermined at compilation.&nbsp; For this purpose I designed a class that holds the exact structure that Microsoft requires in unmanaged memory via
+        an System.IntPtr.&nbsp; I had to resort to one unsafe procedure at this point ... but I'm sure that can be bypassed with more work in the future.
+    </p>
+    <pre lang="cs">
 [return: MarshalAs(UnmanagedType.Bool)]
 [SuppressUnmanagedCodeSecurity, DllImport("advapi32.dll", SetLastError = true)]
 internal static extern bool AdjustTokenPrivileges(AccessTokenHandle accessTokenHandle, [MarshalAs(UnmanagedType.Bool)] bool disableAllPrivileges, IntPtr NewPriviledges,
-	Int32 bufferLength, ref IntPtr PriorPriviledges, out Int32 returnLength);
-	</pre>
-	<p>
-		Combining my class with Nick Lowe's privilege code, we can setup our kernel privileges with:
-	</p>
-	<pre lang="cs">
-AccessTokenHandle
-	myProcessToken = new AccessTokenHandle(System.Diagnostics.Process.GetCurrentProcess(), ProcessPrivileges.TokenAccessRights.AdjustPrivileges | TokenAccessRights.Query);
+    Int32 bufferLength, ref IntPtr PriorPriviledges, out Int32 returnLength);
+    </pre>
+    <p>
+        Combining my class with Nick Lowe's privilege code, we can setup our kernel privileges with:
+    </p>
+    <pre lang="cs">
+var myProcessToken = new AccessTokenHandle(System.Diagnostics.Process.GetCurrentProcess(), ProcessPrivileges.TokenAccessRights.AdjustPrivileges | TokenAccessRights.Query);
 myProcessToken.EnablePrivilege(Privilege.Debug, Privilege.ProfileSingleProcess);
-	</pre>
-	<h1>Step Two: Sending the command to the Kernel</h1>
-	<p>
-		This time, Microsoft simply wants an int array.&nbsp; These Marshal easily, so all we need is:
-	</p>
-	<pre lang="cs">
+    </pre>
+    <h1>Step Two: Sending the command to the Kernel</h1>
+    <p>
+        This time, Microsoft simply wants an int array.&nbsp; These Marshal easily, so all we need is:
+    </p>
+    <pre lang="cs">
 [DllImport("ntdll.dll")]
 public static extern NtStatus NtSetSystemInformation(SYSTEM_INFORMATION_CLASS InfoClass, int[] Info, uint Length);
 
-NativeMethods.NtStatus
-	result = 0;
-int[]
-	arr = new int[] { (int)Commands.MemoryPurgeStandbyList };
-result = NativeMethods.NtSetSystemInformation(NativeMethods.SYSTEM_INFORMATION_CLASS.SystemMemoryListInformation, arr, (uint)(sizeof(int) * arr.Length));
-if (result > 0)
-	throw new System.ComponentModel.Win32Exception();
-	</pre>
+var arr = new int[] { (int)Commands.MemoryPurgeStandbyList };
+NativeMethods.NtStatus result = NativeMethods.NtSetSystemInformation(NativeMethods.SYSTEM_INFORMATION_CLASS.SystemMemoryListInformation, arr, (uint)(sizeof(int) * arr.Length));
+if (result != NativeMethods.NtStatus.Success) { throw new System.ComponentModel.Win32Exception(); }
+    </pre>
 </body>
 </html>
